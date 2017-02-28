@@ -107,6 +107,8 @@ class Stack(object):
     @property
     def blueprint(self):
         if not hasattr(self, "_blueprint"):
+            if 'git' in self.definition:
+                util.fetch_git_blueprint(self.definition['git'])
             class_path = self.definition["class_path"]
             blueprint_class = util.load_object_from_string(class_path)
             if not hasattr(blueprint_class, "rendered"):

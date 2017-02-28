@@ -6,7 +6,9 @@ import logging
 import os
 import re
 import sys
+import tempfile
 import time
+from git import Repo
 
 logger = logging.getLogger(__name__)
 
@@ -366,3 +368,20 @@ def read_value_from_path(value):
         with open(relative_path) as read_file:
             value = read_file.read()
     return value
+
+
+def fetch_git_blueprint(config):
+    """Makes a remote git repository available for local use
+
+    Args:
+        config (dict): Git dictionary from config.
+
+    """
+    repo_dir = tempfile.mkdtemp(prefix='stacker')
+    repo = Repo.clone_from(config['uri'], repo_dir)
+    if 'ref' in config:
+        repo.head.set_commit(config['ref'])
+    if 'path' in config:
+        sys.path.append(os.path.join(repo_dir, config['path']))
+    else:
+        sys.path.append(repo_dir)
