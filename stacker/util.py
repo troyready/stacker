@@ -5,6 +5,7 @@ import importlib
 import logging
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -370,18 +371,88 @@ def read_value_from_path(value):
     return value
 
 
-def fetch_git_blueprint(config):
+def sanitize_git_path(uri, ref='HEAD'):
+    """Takes a git URI and ref and converts it to a directory safe path
+
+    Args:
+        uri (string): git URI (e.g. git@github.com:remind101/stacker_blueprints.git)
+        ref (string): optional git ref to be appended to the path
+
+    """
+    if uri.endswith('.git'):
+        dir_name = uri[:-3]  # drop .git
+    else:
+        dir_name = uri
+    dir_name = dir_name.replace('@', '_').replace('/', '_').replace(':', '_')
+    dir_name += "-%s" % ref
+    return dir_name
+
+
+def fetch_git_package(config, package_cache):
     """Makes a remote git repository available for local use
 
     Args:
-        config (dict): Git dictionary from config.
+        config (dict): Dictionary of git repo configuration
+        package_cache (string): Directory in which to store cached packages
 
     """
-    repo_dir = tempfile.mkdtemp(prefix='stacker')
-    repo = Repo.clone_from(config['uri'], repo_dir)
+    # Sanitize directory name
     if 'ref' in config:
-        repo.head.set_commit(config['ref'])
-    if 'path' in config:
-        sys.path.append(os.path.join(repo_dir, config['path']))
+        dir_name = sanitize_git_path(uri=config['uri'], ref=config['ref'])
     else:
-        sys.path.append(repo_dir)
+        dir_name = sanitize_git_path(uri=config['uri'])
+    cached_dir_path = os.path.join(package_cache, dir_name)
+
+    # Clone the repo if it doesn't already exist; otherwise refresh it
+    if not os.path.isdir(cached_dir_path):
+        tmp_dir = tempfile.mkdtemp(prefix='stacker')
+        tmp_repo_path = os.path.join(tmp_dir, dir_name)
+        repo = Repo.clone_from(config['uri'], tmp_repo_path)
+        if 'ref' in config:
+            repo.head.set_commit(config['ref'])
+        shutil.move(tmp_repo_path, package_cache)
+        shutil.rmtree(tmp_dir)
+    else:
+        repo = Repo(cached_dir_path)
+        if 'ref' in config:
+            repo.remote().pull(config['ref'])
+            repo.head.set_commit(config['ref'])
+        else:
+            repo.remote().pull('HEAD')
+
+    if 'paths' in config:
+        for path in config['paths']:
+            sys.path.append(os.path.join(package_cache, dir_name, path))
+    else:
+        sys.path.append(cached_dir_path)
+
+
+def get_package_sources(sources):
+    """Makes remote python packages available for local use
+
+    Args:
+        sources (dict): Dictionary of remote sources from config. Currently
+                        supports git repositories
+        Example:
+          {'git': [{'uri': 'git@github.com:remind101/stacker_blueprints.git',
+                    'ref': '1.0.0',
+                    'rel': 'stacker_blueprints'},
+                   {'uri': 'git@github.com:acmecorp/stacker_blueprints.git',
+                    'paths': ['blueprints']},
+                   {'uri': 'git@github.com:acmecorp/just_a_blueprint.git'},
+                   {'uri': 'git@github.com:contoso/webapp.git',
+                    'rel': 'stacker'}]}
+
+    """
+    # First, ensure the cache directory exists
+    stacker_cache = os.path.join(os.environ['HOME'], '.stacker')
+    package_cache = os.path.join(stacker_cache, 'packages')
+    if not os.path.isdir(package_cache):
+        if not os.path.join(stacker_cache):
+            os.mkdir(stacker_cache)
+        os.mkdir(package_cache)
+    # Checkout git repositories specified in config
+    if 'git' in sources:
+        for config in sources['git']:
+            fetch_git_package(config=config,
+                              package_cache=package_cache)

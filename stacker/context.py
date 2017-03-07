@@ -6,6 +6,7 @@ from .config import parse_config
 from .exceptions import MissingEnvironment
 from .stack import Stack
 from .lookups import register_lookup_handler
+from util import get_package_sources
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,9 @@ class Context(object):
         lookups = self.config.get("lookups", {})
         for key, handler in lookups.iteritems():
             register_lookup_handler(key, handler)
+        sources = self.config.get("package_sources", {})
+        if sources != {}:
+            get_package_sources(sources)
 
     def _get_stack_definitions(self):
         if not self.stack_names:
