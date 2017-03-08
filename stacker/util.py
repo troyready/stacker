@@ -436,12 +436,10 @@ def get_package_sources(sources):
         Example:
           {'git': [{'uri': 'git@github.com:remind101/stacker_blueprints.git',
                     'ref': '1.0.0',
-                    'rel': 'stacker_blueprints'},
-                   {'uri': 'git@github.com:acmecorp/stacker_blueprints.git',
-                    'paths': ['blueprints']},
-                   {'uri': 'git@github.com:acmecorp/just_a_blueprint.git'},
+                    'paths': ['stacker_blueprints']},
+                   {'uri': 'git@github.com:acmecorp/stacker_blueprints.git'},
                    {'uri': 'git@github.com:contoso/webapp.git',
-                    'rel': 'stacker'}]}
+                    'ref': 'staging'}]}
 
     """
     # First, ensure the cache directory exists
