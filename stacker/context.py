@@ -90,9 +90,12 @@ class Context(object):
         lookups = self.config.get("lookups", {})
         for key, handler in lookups.iteritems():
             register_lookup_handler(key, handler)
-        sources = self.config.get("package_sources", {})
-        if sources != {}:
-            get_package_sources(sources)
+        sources = self.config.get("package_sources")
+        if sources is not None:
+            get_package_sources(
+                stacker_cache_dir=self.config.get("stacker_cache_dir"),
+                sources=sources
+            )
 
     def _get_stack_definitions(self):
         if not self.stack_names:
