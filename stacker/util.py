@@ -375,7 +375,8 @@ def sanitize_git_path(uri, ref=None):
     """Takes a git URI and ref and converts it to a directory safe path
 
     Args:
-        uri (string): git URI (e.g. git@github.com:remind101/stacker_blueprints.git)
+        uri (string): git URI
+                      (e.g. git@github.com:remind101/stacker_blueprints.git)
         ref (string): optional git ref to be appended to the path
 
     Returns: string (directory name for the supplied uri)
