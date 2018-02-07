@@ -1,6 +1,7 @@
 ## Upcoming/Master
 
 - assertRenderedBlueprint always dumps current results [GH-528]
+- support stack json/yaml templates [GH-530]
 
 ## 1.1.4 (2018-01-26)
 
